@@ -61,6 +61,12 @@ abstract class FeedDao {
     @Query("UPDATE feeds SET retrieveFullText = 0 WHERE feedId = :feedId")
     abstract fun disableFullTextRetrieval(feedId: Long)
 
+    @Query("UPDATE feeds SET readabilityEnabled = 1 WHERE feedId = :feedId")
+    abstract fun enableReadability(feedId: Long)
+
+    @Query("UPDATE feeds SET readabilityEnabled = 0 WHERE feedId = :feedId")
+    abstract fun disableReadability(feedId: Long)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract fun insert(vararg feeds: Feed)
 

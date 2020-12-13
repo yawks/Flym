@@ -217,6 +217,8 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
                                 }
                                 R.id.enable_full_text_retrieval -> doAsync { App.db.feedDao().enableFullTextRetrieval(feedWithCount.feed.id) }
                                 R.id.disable_full_text_retrieval -> doAsync { App.db.feedDao().disableFullTextRetrieval(feedWithCount.feed.id) }
+                                R.id.enable_readability -> doAsync { App.db.feedDao().enableReadability(feedWithCount.feed.id) }
+                                R.id.disable_readability -> doAsync { App.db.feedDao().disableReadability(feedWithCount.feed.id) }
                             }
                             true
                         }
@@ -229,13 +231,28 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
                                 menu.findItem(R.id.reorder).isVisible = false
                                 menu.findItem(R.id.enable_full_text_retrieval).isVisible = false
                                 menu.findItem(R.id.disable_full_text_retrieval).isVisible = false
+                                menu.findItem(R.id.enable_readability).isVisible = false
+                                menu.findItem(R.id.disable_readability).isVisible = false
                             }
                             feedWithCount.feed.isGroup -> {
                                 menu.findItem(R.id.enable_full_text_retrieval).isVisible = false
                                 menu.findItem(R.id.disable_full_text_retrieval).isVisible = false
+                                menu.findItem(R.id.enable_readability).isVisible = false
+                                menu.findItem(R.id.disable_readability).isVisible = false
                             }
-                            feedWithCount.feed.retrieveFullText -> menu.findItem(R.id.enable_full_text_retrieval).isVisible = false
-                            else -> menu.findItem(R.id.disable_full_text_retrieval).isVisible = false
+                            else -> {
+                                if (feedWithCount.feed.readabilityEnabled) {
+                                    menu.findItem(R.id.enable_readability).isVisible = false
+                                } else {
+                                    menu.findItem(R.id.disable_readability).isVisible = false
+                                }
+                                if (feedWithCount.feed.retrieveFullText) {
+                                    menu.findItem(R.id.enable_full_text_retrieval).isVisible = false
+                                } else {
+                                    menu.findItem(R.id.disable_full_text_retrieval).isVisible = false
+                                }
+                            }
+
                         }
 
                         show()

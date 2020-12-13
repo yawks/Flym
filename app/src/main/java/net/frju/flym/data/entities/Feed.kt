@@ -50,6 +50,8 @@ data class Feed(
         var imageLink: String? = null,
         var fetchError: Boolean = false,
         var retrieveFullText: Boolean = false,
+        @ColumnInfo(defaultValue = "1")
+        var readabilityEnabled: Boolean = true,
         var isGroup: Boolean = false,
         var groupId: Long? = null,
         var displayPriority: Int = 0,
