@@ -54,7 +54,7 @@ class App : Application() {
         context.putPrefBoolean(PrefConstants.IS_REFRESHING, false) // init
 
         // Enable strict mode to find performance issues in debug build
-        if (BuildConfig.DEBUG) {
+        /*if (BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder()
                     .detectAll()
                     .penaltyLog()
@@ -72,6 +72,6 @@ class App : Application() {
                 vmPolicy.penaltyLog()
             }
             StrictMode.setVmPolicy(vmPolicy.build())
-        }
+        }*/
     }
 }

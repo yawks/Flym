@@ -34,7 +34,7 @@ import net.frju.flym.data.entities.Task
 import org.jetbrains.anko.doAsync
 
 
-@Database(entities = [Feed::class, Entry::class, Task::class], version = 4)
+@Database(entities = [Feed::class, Entry::class, Task::class], version = 5)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -80,11 +80,20 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.run {
+                    execSQL("ALTER TABLE feeds ADD COLUMN readabilityEnabled INTEGER NOT NULL DEFAULT 1;")
+                }
+            }
+        }
+
         fun createDatabase(context: Context): AppDatabase {
             return Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DATABASE_NAME)
                     .addMigrations(MIGRATION_1_2)
                     .addMigrations(MIGRATION_2_3)
                     .addMigrations(MIGRATION_3_4)
+                    .addMigrations(MIGRATION_4_5)
                     .addCallback(object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
