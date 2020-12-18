@@ -127,6 +127,8 @@
     <string name="settings_category_article_list">Liste d\'articles</string>
     <string name="settings_category_article_appearance">Apparence des articles</string>
     <string name="settings_enable_entry_swipe_description">Si activé, permet de glisser horizontalement pour naviguer entre les différents articles</string>
+    <string name="menu_enable_readability">Afficher seulement le contenu du important des articles</string>
+    <string name="menu_readability">Afficher l\'article tel quel</string>
     <string-array name="settings_intervals">
         <item>5 minutes</item>
         <item>15 minutes</item>

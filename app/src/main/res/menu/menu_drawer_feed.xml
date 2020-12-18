@@ -25,4 +25,12 @@
         android:id="@+id/disable_full_text_retrieval"
         android:title="@string/menu_disable_full_text_retrieval" />
 
+    <item
+        android:id="@+id/enable_readability"
+        android:title="@string/menu_enable_readability" />
+
+    <item
+        android:id="@+id/disable_readability"
+        android:title="@string/menu_readability" />
+
 </menu>

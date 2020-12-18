@@ -46,6 +46,7 @@ import okio.buffer
 import okio.sink
 import org.jetbrains.anko.*
 import org.jsoup.Jsoup
+import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -311,31 +312,15 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
                         try {
                             createCall(link, task.username, task.password).execute().use { response ->
                                 response.body?.byteStream()?.let { input ->
-                                    Readability4JExtended(link, Jsoup.parse(input, null, link)).parse().articleContent?.html()?.let {
-                                        val mobilizedHtml = HtmlUtils.improveHtmlContent(it, getBaseUrl(link))
+                                        val feed = App.db.feedDao().findById(entry.feedId)
 
-                                        val entryDescription = entry.description
-                                        if (entryDescription == null || HtmlCompat.fromHtml(mobilizedHtml, HtmlCompat.FROM_HTML_MODE_LEGACY).length > HtmlCompat.fromHtml(entryDescription, HtmlCompat.FROM_HTML_MODE_LEGACY).length) { // If the retrieved text is smaller than the original one, then we certainly failed...
-                                            if (downloadPictures) {
-                                                val imagesList = HtmlUtils.getImageURLs(mobilizedHtml)
-                                                if (imagesList.isNotEmpty()) {
-                                                    if (entry.imageLink == null) {
-                                                        entry.imageLink = HtmlUtils.getMainImageURL(imagesList)
-                                                    }
-                                                    imgUrlsToDownload[entry.id] = imagesList
-                                                }
-                                            } else if (entry.imageLink == null) {
-                                                entry.imageLink = HtmlUtils.getMainImageURL(mobilizedHtml)
+                                        if (feed?.readabilityEnabled == null || feed?.readabilityEnabled) {
+                                            Readability4JExtended(link, Jsoup.parse(input, null, link)).parse().articleContent?.html()?.let {
+                                                success = manageContent(HtmlUtils.improveHtmlContent(it, getBaseUrl(link)), entry, downloadPictures, imgUrlsToDownload, task, false)
                                             }
-
-                                            success = true
-
-                                            entry.mobilizedContent = mobilizedHtml
-                                            App.db.entryDao().update(entry)
-
-                                            App.db.taskDao().delete(task)
+                                        } else {
+                                            success = manageContent(input.bufferedReader().use(BufferedReader::readText), entry, downloadPictures, imgUrlsToDownload, task, true)
                                         }
-                                    }
                                 }
                             }
                         } catch (t: Throwable) {
@@ -355,6 +340,33 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
             }
 
             addImagesToDownload(imgUrlsToDownload)
+        }
+
+        private fun manageContent(mobilizedHtml: String, entry: Entry,  downloadPictures: Boolean, imgUrlsToDownload: MutableMap<String, List<String>>, task: Task, trustContent: Boolean) : Boolean {
+            var success = false
+
+            val entryDescription = entry.description
+            if (trustContent || entryDescription == null || HtmlCompat.fromHtml(mobilizedHtml, HtmlCompat.FROM_HTML_MODE_LEGACY).length > HtmlCompat.fromHtml(entryDescription, HtmlCompat.FROM_HTML_MODE_LEGACY).length) { // If the retrieved text is smaller than the original one, then we certainly failed...
+                if (downloadPictures) {
+                    val imagesList = HtmlUtils.getImageURLs(mobilizedHtml)
+                    if (imagesList.isNotEmpty()) {
+                        if (entry.imageLink == null) {
+                            entry.imageLink = HtmlUtils.getMainImageURL(imagesList)
+                        }
+                        imgUrlsToDownload[entry.id] = imagesList
+                    }
+                } else if (entry.imageLink == null) {
+                    entry.imageLink = HtmlUtils.getMainImageURL(mobilizedHtml)
+                }
+
+                success = true
+
+                entry.mobilizedContent = mobilizedHtml
+                App.db.entryDao().update(entry)
+
+                App.db.taskDao().delete(task)
+            }
+            return success
         }
 
         private fun downloadAllImages() {

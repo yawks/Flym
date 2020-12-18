@@ -138,6 +138,8 @@
     <string name="settings_category_article_list">Article list</string>
     <string name="settings_category_article_appearance">Article appearance</string>
     <string name="settings_enable_entry_swipe_description">If enabled, allows swiping between entries while viewing an entry</string>
+    <string name="menu_enable_readability">Display only article main content</string>
+    <string name="menu_readability">Display article full content</string>
 
     <string-array name="settings_intervals">
         <item>5 minutes</item>
