@@ -34,4 +34,7 @@ import kotlinx.android.parcel.Parcelize
 data class Task(
         var entryId: String = "",
         var imageLinkToDl: String = "",
-        var numberAttempt: Int = 0) : Parcelable
+        var numberAttempt: Int = 0,
+        var username: String? = null,
+        var password: String? = null) : Parcelable
+

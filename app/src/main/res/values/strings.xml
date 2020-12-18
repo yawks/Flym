@@ -97,6 +97,7 @@
         <item>design</item>
         <item>comics</item>
     </string-array>
+    <string name="authentication_dialog_title">Authentication</string>
 
     <!-- SETTINGS -->
     <string name="entry_default_title">Untitled</string>

@@ -100,6 +100,8 @@ class EntryDetailsFragment : Fragment() {
     private var isMobilizingLiveData: LiveData<Int>? = null
     private var isMobilizing = false
     private var preferFullText = true
+    private var username: String? = null
+    private var password: String? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return if (defaultSharedPreferences.getBoolean(ENABLE_SWIPE_ENTRY, true)) {
@@ -316,7 +318,7 @@ class EntryDetailsFragment : Fragment() {
                     this@EntryDetailsFragment.context?.let { c ->
                         if (c.isOnline()) {
                             doAsync {
-                                FetcherService.addEntriesToMobilize(listOf(entryWithFeed.entry.id))
+                                FetcherService.addEntriesToMobilize(listOf(entryWithFeed.entry.id), username, password)
                                 c.startService(Intent(c, FetcherService::class.java).setAction(FetcherService.ACTION_MOBILIZE_FEEDS))
                             }
                         } else {
@@ -352,6 +354,8 @@ class EntryDetailsFragment : Fragment() {
                 val feed = App.db.feedDao().findById(entry.entry.feedId)
                 entryWithFeed = entry
                 preferFullText = feed?.retrieveFullText ?: true
+                username = feed?.username
+                password = feed?.password
                 isMobilizing = false
 
                 uiThread {

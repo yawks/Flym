@@ -53,6 +53,8 @@ data class Feed(
         var isGroup: Boolean = false,
         var groupId: Long? = null,
         var displayPriority: Int = 0,
+        var username: String? = null,
+        var password: String? = null,
         @Deprecated("Not used anymore")
         var lastManualActionUid: String = "") : Parcelable {
 
