@@ -68,11 +68,6 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
 
         private const val USER_AGENT = "Mozilla/5.0 (compatible) AppleWebKit Chrome Safari"
 
-        private val HTTP_CLIENT: OkHttpClient.Builder = OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(20, TimeUnit.SECONDS)
-                .cookieJar(JavaNetCookieJar(COOKIE_MANAGER))
-
         const val FROM_AUTO_REFRESH = "FROM_AUTO_REFRESH"
 
         const val ACTION_REFRESH_FEEDS = "net.frju.flym.REFRESH"
@@ -90,7 +85,10 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
         fun createCall(url: String, username: String? = null, password: String? = null) : Call {
             var call: Call
             if (username != null) {
-                call = HTTP_CLIENT
+                call = OkHttpClient.Builder()
+                        .connectTimeout(10, TimeUnit.SECONDS)
+                        .readTimeout(20, TimeUnit.SECONDS)
+                        .cookieJar(JavaNetCookieJar(COOKIE_MANAGER))
                         .authenticator(object : Authenticator {
                             @Throws(IOException::class)
                             override fun authenticate(route: Route?, response: Response): Request? {
@@ -111,11 +109,14 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
                                 .addHeader("accept", "*/*")
                                 .build())
             } else {
-                call = HTTP_CLIENT.build().newCall(Request.Builder()
-                        .url(url)
-                        .header("User-agent", USER_AGENT) // some feeds need this to work properly
-                        .addHeader("accept", "*/*")
-                        .build())
+                call = OkHttpClient.Builder()
+                        .connectTimeout(10, TimeUnit.SECONDS)
+                        .readTimeout(20, TimeUnit.SECONDS)
+                        .cookieJar(JavaNetCookieJar(COOKIE_MANAGER)).build().newCall(Request.Builder()
+                                .url(url)
+                                .header("User-agent", USER_AGENT) // some feeds need this to work properly
+                                .addHeader("accept", "*/*")
+                                .build())
             }
 
             return call
