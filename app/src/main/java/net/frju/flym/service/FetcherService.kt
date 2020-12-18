@@ -18,10 +18,7 @@
 package net.frju.flym.service
 
 import android.annotation.TargetApi
-import android.app.IntentService
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
+import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
@@ -44,10 +41,7 @@ import net.frju.flym.data.entities.toDbFormat
 import net.frju.flym.data.utils.PrefConstants
 import net.frju.flym.ui.main.MainActivity
 import net.frju.flym.utils.*
-import okhttp3.Call
-import okhttp3.JavaNetCookieJar
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import okhttp3.*
 import okio.buffer
 import okio.sink
 import org.jetbrains.anko.*
@@ -72,11 +66,12 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
             setCookiePolicy(CookiePolicy.ACCEPT_ALL)
         }
 
-        private val HTTP_CLIENT: OkHttpClient = OkHttpClient.Builder()
+        private const val USER_AGENT = "Mozilla/5.0 (compatible) AppleWebKit Chrome Safari"
+
+        private val HTTP_CLIENT: OkHttpClient.Builder = OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(20, TimeUnit.SECONDS)
                 .cookieJar(JavaNetCookieJar(COOKIE_MANAGER))
-                .build()
 
         const val FROM_AUTO_REFRESH = "FROM_AUTO_REFRESH"
 
@@ -92,11 +87,39 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
         private const val TEMP_PREFIX = "TEMP__"
         private const val ID_SEPARATOR = "__"
 
-        fun createCall(url: String): Call = HTTP_CLIENT.newCall(Request.Builder()
-                .url(url)
-                .header("User-agent", "Mozilla/5.0 (compatible) AppleWebKit Chrome Safari") // some feeds need this to work properly
-                .addHeader("accept", "*/*")
-                .build())
+        fun createCall(url: String, username: String? = null, password: String? = null) : Call {
+            var call: Call
+            if (username != null) {
+                call = HTTP_CLIENT
+                        .authenticator(object : Authenticator {
+                            @Throws(IOException::class)
+                            override fun authenticate(route: Route?, response: Response): Request? {
+                                if (response.request.header("Authorization") != null) {
+                                    return null // Give up, we've already attempted to authenticate.
+                                }
+
+                                val credential = Credentials.basic(username!!, password!!)
+                                return response.request.newBuilder()
+                                        .header("Authorization", credential)
+                                        .build()
+                            }
+                        })
+                        .build()
+                        .newCall(Request.Builder()
+                                .url(url)
+                                .header("User-agent", USER_AGENT) // some feeds need this to work properly
+                                .addHeader("accept", "*/*")
+                                .build())
+            } else {
+                call = HTTP_CLIENT.build().newCall(Request.Builder()
+                        .url(url)
+                        .header("User-agent", USER_AGENT) // some feeds need this to work properly
+                        .addHeader("accept", "*/*")
+                        .build())
+            }
+
+            return call
+        }
 
         fun fetch(context: Context, isFromAutoRefresh: Boolean, action: String, feedId: Long = 0L) {
             if (context.getPrefBoolean(PrefConstants.IS_REFRESHING, false)) {
@@ -266,8 +289,8 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
             }
         }
 
-        fun addEntriesToMobilize(entryIds: List<String>) {
-            val newTasks = entryIds.map { Task(entryId = it) }
+        fun addEntriesToMobilize(entryIds: List<String>, username:String?, password: String?) {
+            val newTasks = entryIds.map { Task(entryId = it, username=username, password = password) }
 
             App.db.taskDao().insert(*newTasks.toTypedArray())
         }
@@ -286,7 +309,7 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
                 App.db.entryDao().findById(task.entryId)?.let { entry ->
                     entry.link?.let { link ->
                         try {
-                            createCall(link).execute().use { response ->
+                            createCall(link, task.username, task.password).execute().use { response ->
                                 response.body?.byteStream()?.let { input ->
                                     Readability4JExtended(link, Jsoup.parse(input, null, link)).parse().articleContent?.html()?.let {
                                         val mobilizedHtml = HtmlUtils.improveHtmlContent(it, getBaseUrl(link))
@@ -339,7 +362,7 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
                 val tasks = App.db.taskDao().downloadTasks
                 for (task in tasks) {
                     try {
-                        downloadImage(task.entryId, task.imageLinkToDl)
+                        downloadImage(task.entryId, task.imageLinkToDl, task.username, task.password)
 
                         // If we are here, everything is OK
                         App.db.taskDao().delete(task)
@@ -406,7 +429,7 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
 
             val previousFeedState = feed.copy()
             try {
-                createCall(feed.link).execute().use { response ->
+                createCall(feed.link, feed.username, feed.password).execute().use { response ->
                     val input = SyndFeedInput()
                     val romeFeed = input.build(XmlReader(response.body!!.byteStream()))
                     entries.addAll(romeFeed.entries.asSequence().filter { it.publishedDate?.time ?: Long.MAX_VALUE > acceptMinDate }.map { it.toDbFormat(context, feed) })
@@ -488,7 +511,7 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
             App.db.entryDao().insert(*(entriesToInsert.toTypedArray()))
 
             if (feed.retrieveFullText) {
-                addEntriesToMobilize(entries.map { it.id })
+                addEntriesToMobilize(entries.map { it.id }, feed.username, feed.password)
             }
 
             addImagesToDownload(imgUrlsToDownload)
@@ -505,7 +528,7 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
         }
 
         @Throws(IOException::class)
-        private fun downloadImage(entryId: String, imgUrl: String) {
+        private fun downloadImage(entryId: String, imgUrl: String, username: String?, password: String?) {
             val tempImgPath = getTempDownloadedImagePath(entryId, imgUrl)
             val finalImgPath = getDownloadedImagePath(entryId, imgUrl)
 
@@ -516,7 +539,7 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
                 val realUrl = HtmlCompat.fromHtml(imgUrl, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
 
                 try {
-                    createCall(realUrl).execute().use { response ->
+                    createCall(realUrl, username, password).execute().use { response ->
                         response.body?.let { body ->
                             val fileOutput = FileOutputStream(tempImgPath)
 

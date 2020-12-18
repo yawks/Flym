@@ -1,18 +1,20 @@
 package net.frju.flym.ui.discover
 
+import android.app.AlertDialog
 import android.content.Context
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.webkit.URLUtil
-import android.widget.AutoCompleteTextView
-import android.widget.Button
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentTransaction
 import net.fred.feedex.R
 import net.frju.flym.App
 import net.frju.flym.data.entities.Feed
 import net.frju.flym.data.entities.SearchFeedResult
+import net.frju.flym.service.FetcherService
 import net.frju.flym.utils.setupTheme
 import org.jetbrains.anko.design.snackbar
 import org.jetbrains.anko.doAsync
@@ -35,6 +37,8 @@ class DiscoverActivity : AppCompatActivity(), FeedManagementInterface {
         @JvmStatic
         fun newInstance(context: Context, query: String) =
                 context.startActivity<DiscoverActivity>(FeedSearchFragment.ARG_QUERY to query)
+
+        private const val MAX_AUTHENTICATION_ATTEMPTS = 10
     }
 
     private var searchInput: AutoCompleteTextView? = null
@@ -134,11 +138,43 @@ class DiscoverActivity : AppCompatActivity(), FeedManagementInterface {
     }
 
     override fun addFeed(view: View, title: String, link: String) {
+        addFeedWithAuthCheck(view, title, link)
+    }
+
+    private fun addFeedWithAuthCheck(view: View, title: String, link: String, username: String? = null, password:String? = null) {
         doAsync {
-            val feedToAdd = Feed(link = link, title = title)
-            App.db.feedDao().insert(feedToAdd)
-            uiThread {
-                view.snackbar(R.string.feed_added)
+            FetcherService.createCall(link, username, password).execute().use { response ->
+                if (response.code == 401) {
+                    uiThread {
+                        showAuthenticationAlertDialog(view, link, title, username, password)
+                    }
+                } else {
+                    val feedToAdd = Feed(link = link, title = title, username = username, password = password)
+                    App.db.feedDao().insert(feedToAdd)
+                    uiThread {
+                        view.snackbar(R.string.feed_added)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showAuthenticationAlertDialog(view: View, link: String, title: String, username: String?, password: String?) {
+        view?.let { _ ->
+            val dialogLayout = layoutInflater.inflate(R.layout.alert_dialog_username_password, null)
+            val feedUsername = dialogLayout.findViewById<EditText>(R.id.feed_username)
+            val feedPassword = dialogLayout.findViewById<EditText>(R.id.feed_password)
+
+            var builder = AlertDialog.Builder(view.context)
+            with (builder) {
+                setTitle(R.string.authentication_dialog_title).setMessage(link)
+                setNegativeButton(android.R.string.no) { dialogInterface, _ ->
+                    dialogInterface.dismiss()
+                }
+                setPositiveButton(android.R.string.yes) { _: DialogInterface, _: Int ->
+                    addFeedWithAuthCheck(view, title, link, feedUsername.text.toString(), feedPassword.text.toString())
+                }
+                setView(dialogLayout).show()
             }
         }
     }
