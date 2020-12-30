@@ -18,15 +18,12 @@
 package net.frju.flym.data.entities
 
 import android.os.Parcelable
-import androidx.room.ColumnInfo
-import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.room.*
 import com.amulyakhare.textdrawable.TextDrawable
 import com.amulyakhare.textdrawable.util.ColorGenerator
 import com.rometools.rome.feed.synd.SyndFeed
 import kotlinx.android.parcel.Parcelize
+import net.frju.flym.data.converters.Converters
 
 
 val DELIMITERS = arrayOf(" ", "-", "&", ":", "|")
@@ -38,6 +35,7 @@ val DELIMITERS = arrayOf(" ", "-", "&", ":", "|")
                 parentColumns = ["feedId"],
                 childColumns = ["groupId"],
                 onDelete = ForeignKey.CASCADE))])
+@TypeConverters(Converters::class)
 data class Feed(
         @PrimaryKey(autoGenerate = true)
         @ColumnInfo(name = "feedId")
@@ -48,7 +46,7 @@ data class Feed(
         var title: String? = null,
         @ColumnInfo(name = "feedImageLink")
         var imageLink: String? = null,
-        var fetchError: Boolean = false,
+        var fetchError: FetchError = FetchError.NO_ERROR,
         var retrieveFullText: Boolean = false,
         var isGroup: Boolean = false,
         var groupId: Long? = null,
@@ -97,10 +95,16 @@ data class Feed(
         }
 
         // no error anymore since we just got a feedWithCount
-        fetchError = false
+        fetchError = FetchError.NO_ERROR
     }
 
     fun getLetterDrawable(rounded: Boolean = false): TextDrawable {
         return getLetterDrawable(id, title, rounded)
     }
+}
+
+enum class FetchError(val error:Int) {
+    NO_ERROR (0),
+    OTHER_ERROR (1),
+    AUTH_ERROR (2)
 }

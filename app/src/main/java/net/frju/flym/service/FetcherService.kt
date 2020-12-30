@@ -34,10 +34,7 @@ import net.dankito.readability4j.extended.Readability4JExtended
 import net.fred.feedex.R
 import net.frju.flym.App
 import net.frju.flym.App.Companion.context
-import net.frju.flym.data.entities.Entry
-import net.frju.flym.data.entities.Feed
-import net.frju.flym.data.entities.Task
-import net.frju.flym.data.entities.toDbFormat
+import net.frju.flym.data.entities.*
 import net.frju.flym.data.utils.PrefConstants
 import net.frju.flym.ui.main.MainActivity
 import net.frju.flym.utils.*
@@ -431,13 +428,17 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
             val previousFeedState = feed.copy()
             try {
                 createCall(feed.link, feed.username, feed.password).execute().use { response ->
-                    val input = SyndFeedInput()
-                    val romeFeed = input.build(XmlReader(response.body!!.byteStream()))
-                    entries.addAll(romeFeed.entries.asSequence().filter { it.publishedDate?.time ?: Long.MAX_VALUE > acceptMinDate }.map { it.toDbFormat(context, feed) })
-                    feed.update(romeFeed)
+                    if (response.code == 401) {
+                        feed.fetchError = FetchError.AUTH_ERROR
+                    } else {
+                        val input = SyndFeedInput()
+                        val romeFeed = input.build(XmlReader(response.body!!.byteStream()))
+                        entries.addAll(romeFeed.entries.asSequence().filter { it.publishedDate?.time ?: Long.MAX_VALUE > acceptMinDate }.map { it.toDbFormat(context, feed) })
+                        feed.update(romeFeed)
+                    }
                 }
             } catch (t: Throwable) {
-                feed.fetchError = true
+                feed.fetchError = FetchError.OTHER_ERROR
             }
 
             if (feed != previousFeedState) {

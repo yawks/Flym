@@ -18,6 +18,7 @@
 package net.frju.flym.data.converters
 
 import androidx.room.TypeConverter
+import net.frju.flym.data.entities.FetchError
 import java.util.Date
 
 class Converters {
@@ -30,4 +31,11 @@ class Converters {
     fun dateToTimestamp(date: Date?): Long? {
         return date?.time
     }
+
+    @TypeConverter
+    fun toFetchError(value: Int) = enumValues<FetchError>()[value]
+
+    @TypeConverter
+    fun fromFetchError(value: FetchError) = value.ordinal
+
 }

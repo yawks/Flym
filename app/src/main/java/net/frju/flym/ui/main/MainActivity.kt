@@ -25,6 +25,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -39,6 +40,7 @@ import com.rometools.opml.io.impl.OPML20Generator
 import com.rometools.rome.io.WireFeedInput
 import com.rometools.rome.io.WireFeedOutput
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.alert_dialog_username_password.view.*
 import kotlinx.android.synthetic.main.dialog_edit_feed.view.*
 import kotlinx.android.synthetic.main.fragment_entries.*
 import kotlinx.android.synthetic.main.view_main_drawer_header.*
@@ -46,6 +48,7 @@ import net.fred.feedex.R
 import net.frju.flym.App
 import net.frju.flym.data.entities.Feed
 import net.frju.flym.data.entities.FeedWithCount
+import net.frju.flym.data.entities.FetchError
 import net.frju.flym.data.utils.PrefConstants
 import net.frju.flym.service.AutoRefreshJobService
 import net.frju.flym.service.FetcherService
@@ -149,6 +152,7 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
                         drawer_hint.textColor = Color.RED
                         drawer_hint.textResource = R.string.drawer_fetch_error_explanation
                         toolbar.setNavigationIcon(R.drawable.ic_menu_red_highlight_24dp)
+                        checkBasicAuthErrors()
                     } else {
                         drawer_hint.textColor = Color.WHITE
                         drawer_hint.textResource = R.string.drawer_explanation
@@ -480,10 +484,47 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
         return false
     }
 
+    private fun updateFeedWithAuthCheck(view: View, feedId: Long, link: String, title: String, username: String, password:String) {
+        doAsync {
+            FetcherService.createCall(link, username, password).execute().use { response ->
+                if (response.code == 401) {
+                    uiThread {
+                        showAuthenticationAlertDialog(feedId, link, title)
+                    }
+                } else {
+                    App.db.feedDao().updateCredentialsById(feedId, username, password)
+                }
+            }
+        }
+    }
+    private fun showAuthenticationAlertDialog(feedId: Long, link: String, title: String) {
+        val dialogLayout = layoutInflater.inflate(R.layout.alert_dialog_username_password, null)
+
+        AlertDialog.Builder(this@MainActivity)
+                .setTitle(R.string.authentication_dialog_title).setMessage(title)
+                .setView(dialogLayout)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    updateFeedWithAuthCheck(view=dialogLayout, feedId=feedId, link=link, title=title, username=dialogLayout.feed_username.text.toString(), password=dialogLayout.feed_password.text.toString())
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+    }
+
+    private fun checkBasicAuthErrors() {
+        run outer@{
+            feedGroups.forEach { feedGroup ->
+                if (feedGroup.feedWithCount.feed.fetchError == FetchError.AUTH_ERROR || feedGroup.subFeeds.any { it.feed.fetchError == FetchError.AUTH_ERROR }) {
+                    showAuthenticationAlertDialog(feedId = feedGroup.feedWithCount.feed.id, link = feedGroup.feedWithCount.feed.link, title = feedGroup.feedWithCount.feed.title!!)
+                    return@outer //changing the credentials of a feed will refresh and relaunch the checkErrors function, this break avoids having the same popup multiple times
+                }
+            }
+        }
+    }
+
     private fun hasFetchingError(): Boolean {
         // Also need to check all sub groups (can't be checked in FeedGroup's equals)
         feedGroups.forEach { feedGroup ->
-            if (feedGroup.feedWithCount.feed.fetchError || feedGroup.subFeeds.any { it.feed.fetchError }) {
+            if (feedGroup.feedWithCount.feed.fetchError != FetchError.NO_ERROR || feedGroup.subFeeds.any { it.feed.fetchError != FetchError.NO_ERROR}) {
                 return true
             }
         }

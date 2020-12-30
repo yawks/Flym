@@ -28,6 +28,7 @@ import kotlinx.android.synthetic.main.view_feed.view.*
 import net.fred.feedex.R
 import net.frju.flym.data.entities.Feed
 import net.frju.flym.data.entities.FeedWithCount
+import net.frju.flym.data.entities.FetchError
 import net.frju.flym.data.utils.PrefConstants
 import net.frju.flym.utils.getPrefString
 import org.jetbrains.anko.dip
@@ -152,7 +153,7 @@ abstract class BaseFeedAdapter(groups: List<FeedGroup>) : ExpandableRecyclerAdap
             }
             itemView.title.text = group.feedWithCount.feed.title
             itemView.entry_count?.text = group.getEntryCountString()
-            if (group.feedWithCount.feed.fetchError || group.subFeeds.any { it.feed.fetchError }) {
+            if (group.feedWithCount.feed.fetchError != FetchError.NO_ERROR || group.subFeeds.any { it.feed.fetchError != FetchError.NO_ERROR }) {
                 itemView.title.setTextColor(Color.RED) //TODO better
             } else {
                 itemView.title.setTextColor(
@@ -181,7 +182,7 @@ abstract class BaseFeedAdapter(groups: List<FeedGroup>) : ExpandableRecyclerAdap
         fun bindItem(feedWithCount: FeedWithCount) {
             itemView.title.text = feedWithCount.feed.title
             itemView.entry_count?.text = feedWithCount.getEntryCountString()
-            if (feedWithCount.feed.fetchError) { //TODO better
+            if (feedWithCount.feed.fetchError != FetchError.NO_ERROR) { //TODO better
                 itemView.title.setTextColor(Color.RED)
             } else {
                 itemView.title.setTextColor(
