@@ -18,18 +18,15 @@
 package net.frju.flym.data.dao
 
 import androidx.lifecycle.LiveData
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.Update
+import androidx.room.*
+import net.frju.flym.data.converters.Converters
 import net.frju.flym.data.entities.Feed
 import net.frju.flym.data.entities.FeedWithCount
 
 private const val ENTRY_COUNT = "(SELECT COUNT(*) FROM entries WHERE feedId IS f.feedId AND read = 0)"
 
 @Dao
+@TypeConverters(Converters::class)
 abstract class FeedDao {
     @get:Query("SELECT * FROM feeds WHERE isGroup = 0")
     abstract val allNonGroupFeeds: List<Feed>
@@ -75,4 +72,8 @@ abstract class FeedDao {
 
     @Delete
     abstract fun delete(vararg feeds: Feed)
+
+    @Query("UPDATE feeds SET username = :username, password = :password, fetchError = 0 WHERE feedId = :feedId")
+    abstract fun updateCredentialsById(feedId: Long, username: String, password: String)
+
 }

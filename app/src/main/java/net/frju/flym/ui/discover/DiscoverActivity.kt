@@ -10,6 +10,7 @@ import android.webkit.URLUtil
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentTransaction
+import kotlinx.android.synthetic.main.alert_dialog_username_password.view.*
 import net.fred.feedex.R
 import net.frju.flym.App
 import net.frju.flym.data.entities.Feed
@@ -146,7 +147,7 @@ class DiscoverActivity : AppCompatActivity(), FeedManagementInterface {
             FetcherService.createCall(link, username, password).execute().use { response ->
                 if (response.code == 401) {
                     uiThread {
-                        showAuthenticationAlertDialog(view, link, title, username, password)
+                        showAuthenticationAlertDialog(view, link, title)
                     }
                 } else {
                     val feedToAdd = Feed(link = link, title = title, username = username, password = password)
@@ -159,12 +160,9 @@ class DiscoverActivity : AppCompatActivity(), FeedManagementInterface {
         }
     }
 
-    private fun showAuthenticationAlertDialog(view: View, link: String, title: String, username: String?, password: String?) {
+    private fun showAuthenticationAlertDialog(view: View, link: String, title: String) {
         view?.let { _ ->
             val dialogLayout = layoutInflater.inflate(R.layout.alert_dialog_username_password, null)
-            val feedUsername = dialogLayout.findViewById<EditText>(R.id.feed_username)
-            val feedPassword = dialogLayout.findViewById<EditText>(R.id.feed_password)
-
             var builder = AlertDialog.Builder(view.context)
             with (builder) {
                 setTitle(R.string.authentication_dialog_title).setMessage(link)
@@ -172,7 +170,7 @@ class DiscoverActivity : AppCompatActivity(), FeedManagementInterface {
                     dialogInterface.dismiss()
                 }
                 setPositiveButton(android.R.string.yes) { _: DialogInterface, _: Int ->
-                    addFeedWithAuthCheck(view, title, link, feedUsername.text.toString(), feedPassword.text.toString())
+                    addFeedWithAuthCheck(view, title, link, dialogLayout.feed_username.text.toString(), dialogLayout.feed_password.text.toString())
                 }
                 setView(dialogLayout).show()
             }
