@@ -38,8 +38,6 @@ class DiscoverActivity : AppCompatActivity(), FeedManagementInterface {
         @JvmStatic
         fun newInstance(context: Context, query: String) =
                 context.startActivity<DiscoverActivity>(FeedSearchFragment.ARG_QUERY to query)
-
-        private const val MAX_AUTHENTICATION_ATTEMPTS = 10
     }
 
     private var searchInput: AutoCompleteTextView? = null

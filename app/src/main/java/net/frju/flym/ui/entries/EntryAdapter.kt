@@ -18,7 +18,9 @@
 package net.frju.flym.ui.entries
 
 import android.annotation.SuppressLint
+import android.graphics.drawable.Drawable
 import android.text.TextUtils
+import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,11 +28,16 @@ import android.widget.ImageView
 import androidx.paging.PagedListAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
 import com.bumptech.glide.request.transition.DrawableCrossFadeFactory
 import kotlinx.android.synthetic.main.view_entry.view.*
 import net.fred.feedex.R
+import net.frju.flym.App
 import net.frju.flym.GlideApp
+import net.frju.flym.GlideRequest
+import net.frju.flym.data.dao.FeedDao
 import net.frju.flym.data.entities.EntryWithFeed
 import net.frju.flym.data.entities.Feed
 import net.frju.flym.service.FetcherService
@@ -38,6 +45,7 @@ import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.sdk21.listeners.onClick
 import org.jetbrains.anko.sdk21.listeners.onLongClick
 import org.jetbrains.anko.uiThread
+import java.io.File
 
 
 class EntryAdapter(var displayThumbnails: Boolean, private val globalClickListener: (EntryWithFeed) -> Unit, private val globalLongClickListener: (EntryWithFeed) -> Unit, private val favoriteClickListener: (EntryWithFeed, ImageView) -> Unit) : PagedListAdapter<EntryWithFeed, EntryAdapter.ViewHolder>(DIFF_CALLBACK) {
@@ -64,10 +72,29 @@ class EntryAdapter(var displayThumbnails: Boolean, private val globalClickListen
         fun bind(entryWithFeed: EntryWithFeed, globalClickListener: (EntryWithFeed) -> Unit, globalLongClickListener: (EntryWithFeed) -> Unit, favoriteClickListener: (EntryWithFeed, ImageView) -> Unit) = with(itemView) {
             doAsync {
                 val mainImgUrl = if (TextUtils.isEmpty(entryWithFeed.entry.imageLink)) null else FetcherService.getDownloadedOrDistantImageUrl(entryWithFeed.entry.id, entryWithFeed.entry.imageLink!!)
+                var feed = null as Feed?
+                if (mainImgUrl != null) {
+                    feed = App.db.feedDao().findById(entryWithFeed.entry.feedId)
+                }
                 uiThread {
                     val letterDrawable = Feed.getLetterDrawable(entryWithFeed.entry.feedId, entryWithFeed.feedTitle)
                     if (mainImgUrl != null) {
-                        GlideApp.with(context).load(mainImgUrl).centerCrop().transition(withCrossFade(CROSS_FADE_FACTORY)).placeholder(letterDrawable).error(letterDrawable).into(main_icon)
+                        var glideRequest: GlideRequest<Drawable>
+                        glideRequest = if (mainImgUrl.startsWith("http")) {
+                            var glideUrl = if (feed?.username != null) {
+                                GlideUrl(mainImgUrl,
+                                        LazyHeaders.Builder().addHeader("Authorization", "Basic " + Base64.encodeToString((feed.username + ":" + feed.password).toByteArray(Charsets.UTF_8), Base64.NO_WRAP)).build())
+                            } else {
+                                GlideUrl(mainImgUrl)
+                            }
+                            GlideApp.with(context).load(glideUrl)
+                        } else {
+                            GlideApp.with(context).load(mainImgUrl)
+                        }
+
+                        glideRequest.centerCrop().transition(withCrossFade(CROSS_FADE_FACTORY)).placeholder(letterDrawable).error(letterDrawable).into(main_icon)
+
+
                     } else {
                         GlideApp.with(context).clear(main_icon)
                         main_icon.setImageDrawable(letterDrawable)

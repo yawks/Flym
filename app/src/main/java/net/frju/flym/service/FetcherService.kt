@@ -48,6 +48,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.net.CookieManager
 import java.net.CookiePolicy
+import java.util.ArrayList
 import java.util.concurrent.ExecutorCompletionService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -270,14 +271,16 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
             }
         }
 
-        fun addImagesToDownload(imgUrlsToDownload: Map<String, List<String>>) {
+        fun addImagesToDownload(imgUrlsToDownload: Map<String, List<UrlWithCredentials>>) {
             if (imgUrlsToDownload.isNotEmpty()) {
                 val newTasks = mutableListOf<Task>()
                 for ((key, value) in imgUrlsToDownload) {
-                    for (img in value) {
+                    for (urlWithCredentials in value) {
                         val task = Task().apply {
                             entryId = key
-                            imageLinkToDl = img
+                            imageLinkToDl = urlWithCredentials.url
+                            this.username = urlWithCredentials.username
+                            this.password = urlWithCredentials.password
                         }
                         newTasks.add(task)
                     }
@@ -297,7 +300,7 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
         private fun mobilizeAllEntries() {
 
             val tasks = App.db.taskDao().mobilizeTasks
-            val imgUrlsToDownload = mutableMapOf<String, List<String>>()
+            val imgUrlsToDownload = mutableMapOf<String, List<UrlWithCredentials>>()
 
             val downloadPictures = shouldDownloadPictures()
 
@@ -320,7 +323,12 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
                                                     if (entry.imageLink == null) {
                                                         entry.imageLink = HtmlUtils.getMainImageURL(imagesList)
                                                     }
-                                                    imgUrlsToDownload[entry.id] = imagesList
+                                                    var urlsWithCredentials = ArrayList<UrlWithCredentials>()
+                                                    imagesList.forEach { url ->
+                                                        urlsWithCredentials.add(UrlWithCredentials(url, task.username, task.password))
+                                                    }
+                                                    imgUrlsToDownload[entry.id] = urlsWithCredentials
+
                                                 }
                                             } else if (entry.imageLink == null) {
                                                 entry.imageLink = HtmlUtils.getMainImageURL(mobilizedHtml)
@@ -422,7 +430,7 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
         private fun refreshFeed(feed: Feed, acceptMinDate: Long): Int {
             val entries = mutableListOf<Entry>()
             val entriesToInsert = mutableListOf<Entry>()
-            val imgUrlsToDownload = mutableMapOf<String, List<String>>()
+            val imgUrlsToDownload = mutableMapOf<String, List<UrlWithCredentials>>()
             val downloadPictures = shouldDownloadPictures()
 
             val previousFeedState = feed.copy()
@@ -495,7 +503,12 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
                                     if (entry.imageLink == null) {
                                         entry.imageLink = HtmlUtils.getMainImageURL(imagesList)
                                     }
-                                    imgUrlsToDownload[entry.id] = imagesList
+                                    var urlsWithCredentials = ArrayList<UrlWithCredentials>()
+                                    imagesList.forEach { url ->
+                                        urlsWithCredentials.add(UrlWithCredentials(url, feed.username, feed.password))
+                                    }
+
+                                    imgUrlsToDownload[entry.id] = urlsWithCredentials
                                 }
                             } else if (entry.imageLink == null) {
                                 entry.imageLink = HtmlUtils.getMainImageURL(improvedContent)
@@ -605,4 +618,7 @@ class FetcherService : IntentService(FetcherService::class.java.simpleName) {
 
         fetch(this, isFromAutoRefresh, intent.action!!, intent.getLongExtra(EXTRA_FEED_ID, 0L))
     }
+}
+
+class UrlWithCredentials(val url: String, val username: String?, val password: String?) {
 }

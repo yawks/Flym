@@ -31,6 +31,7 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.core.content.FileProvider.getUriForFile
 import net.fred.feedex.R
+import net.frju.flym.App
 import net.frju.flym.data.entities.EntryWithFeed
 import net.frju.flym.data.utils.PrefConstants
 import net.frju.flym.utils.FILE_SCHEME
@@ -134,7 +135,8 @@ class EntryDetailsView @JvmOverloads constructor(context: Context, attrs: Attrib
                 var contentText = if (preferFullText) entryWithFeed.entry.mobilizedContent
                         ?: entryWithFeed.entry.description.orEmpty() else entryWithFeed.entry.description.orEmpty()
                 val displayImages = context.getPrefBoolean(PrefConstants.DISPLAY_IMAGES, true)
-                contentText = if (displayImages) HtmlUtils.replaceImageURLs(contentText, entryWithFeed.entry.id) else contentText.replace(HTML_IMG_REGEX.toRegex(), "")
+                val feed = App.db.feedDao().findById(entryWithFeed.entry.feedId)
+                contentText = if (displayImages) HtmlUtils.replaceImageURLs(contentText, entryWithFeed.entry.id, feed?.username, feed?.password) else contentText.replace(HTML_IMG_REGEX.toRegex(), "")
 
                 uiThread {
                     if (displayImages) {

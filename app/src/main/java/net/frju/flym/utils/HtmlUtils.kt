@@ -21,6 +21,7 @@ import android.content.Intent
 import android.text.TextUtils
 import net.frju.flym.App
 import net.frju.flym.service.FetcherService
+import net.frju.flym.service.UrlWithCredentials
 import org.jetbrains.anko.doAsync
 import org.jsoup.Jsoup
 import org.jsoup.safety.Whitelist
@@ -98,13 +99,13 @@ object HtmlUtils {
         return images
     }
 
-    fun replaceImageURLs(content: String, itemId: String): String {
+    fun replaceImageURLs(content: String, itemId: String, username: String?, password: String?): String {
         @Suppress("NAME_SHADOWING")
         var content = content
 
         if (!TextUtils.isEmpty(content)) {
             val needDownloadPictures = FetcherService.shouldDownloadPictures()
-            val imagesToDl = ArrayList<String>()
+            val imagesToDl = ArrayList<UrlWithCredentials>()
 
             val matcher = IMG_PATTERN.matcher(content)
             while (matcher.find()) {
@@ -113,7 +114,7 @@ object HtmlUtils {
                     if (File(imgPath).exists()) {
                         content = content.replace(match, FILE_SCHEME + imgPath)
                     } else if (needDownloadPictures) {
-                        imagesToDl.add(match)
+                        imagesToDl.add(UrlWithCredentials(match, username, password))
                     }
                 }
             }
