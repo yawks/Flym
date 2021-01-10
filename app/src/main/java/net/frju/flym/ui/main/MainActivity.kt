@@ -142,6 +142,15 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
                         subFeedMap[null]?.map { FeedGroup(it, subFeedMap[it.feed.id].orEmpty()) }.orEmpty()
                 )
 
+                run outer@{
+                    nullableFeeds.forEach { nullableFeed ->
+                        if (nullableFeed.feed.fetchError == FetchError.AUTH_ERROR) {
+                            showAuthenticationAlertDialog(feedId = nullableFeed.feed.id, link = nullableFeed.feed.link, title = nullableFeed.feed.title!!)
+                            return@outer //changing the credentials of a feed will refresh and relaunch the checkErrors function, this break avoids having the same popup multiple times
+                        }
+                    }
+                }
+
                 // Do not always call notifyParentDataSetChanged to avoid selection loss during refresh
                 if (hasFeedGroupsChanged(feedGroups, newFeedGroups)) {
                     feedGroups.clear()
@@ -152,7 +161,6 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
                         drawer_hint.textColor = Color.RED
                         drawer_hint.textResource = R.string.drawer_fetch_error_explanation
                         toolbar.setNavigationIcon(R.drawable.ic_menu_red_highlight_24dp)
-                        checkBasicAuthErrors()
                     } else {
                         drawer_hint.textColor = Color.WHITE
                         drawer_hint.textResource = R.string.drawer_explanation
@@ -508,17 +516,6 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
                 }
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()
-    }
-
-    private fun checkBasicAuthErrors() {
-        run outer@{
-            feedGroups.forEach { feedGroup ->
-                if (feedGroup.feedWithCount.feed.fetchError == FetchError.AUTH_ERROR || feedGroup.subFeeds.any { it.feed.fetchError == FetchError.AUTH_ERROR }) {
-                    showAuthenticationAlertDialog(feedId = feedGroup.feedWithCount.feed.id, link = feedGroup.feedWithCount.feed.link, title = feedGroup.feedWithCount.feed.title!!)
-                    return@outer //changing the credentials of a feed will refresh and relaunch the checkErrors function, this break avoids having the same popup multiple times
-                }
-            }
-        }
     }
 
     private fun hasFetchingError(): Boolean {
