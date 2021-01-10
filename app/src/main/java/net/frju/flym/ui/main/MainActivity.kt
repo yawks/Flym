@@ -146,7 +146,7 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
                     nullableFeeds.forEach { nullableFeed ->
                         if (nullableFeed.feed.fetchError == FetchError.AUTH_ERROR) {
                             showAuthenticationAlertDialog(feedId = nullableFeed.feed.id, link = nullableFeed.feed.link, title = nullableFeed.feed.title!!)
-                            return@outer //changing the credentials of a feed will refresh and relaunch the checkErrors function, this break avoids having the same popup multiple times
+                            return@outer //this break avoids getting the same popup multiple times for the same feed
                         }
                     }
                 }
