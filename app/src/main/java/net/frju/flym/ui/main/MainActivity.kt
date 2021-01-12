@@ -142,12 +142,9 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
                         subFeedMap[null]?.map { FeedGroup(it, subFeedMap[it.feed.id].orEmpty()) }.orEmpty()
                 )
 
-                run outer@{
-                    nullableFeeds.forEach { nullableFeed ->
-                        if (nullableFeed.feed.fetchError == FetchError.AUTH_ERROR) {
-                            showAuthenticationAlertDialog(feedId = nullableFeed.feed.id, link = nullableFeed.feed.link, title = nullableFeed.feed.title!!)
-                            return@outer //this break avoids getting the same popup multiple times for the same feed
-                        }
+                nullableFeeds.forEach { nullableFeed ->
+                    if (nullableFeed.feed.fetchError == FetchError.AUTH_ERROR) {
+                        showAuthenticationAlertDialog(feedId = nullableFeed.feed.id, link = nullableFeed.feed.link, title = nullableFeed.feed.title!!)
                     }
                 }
 
@@ -501,21 +498,26 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
                     }
                 } else {
                     App.db.feedDao().updateCredentialsById(feedId, username, password)
+                    App.context.putPrefBoolean(PrefConstants.AUTH_DIALOG_DISPLAYED, false)
                 }
             }
         }
     }
     private fun showAuthenticationAlertDialog(feedId: Long, link: String, title: String) {
-        val dialogLayout = layoutInflater.inflate(R.layout.alert_dialog_username_password, null)
-
-        AlertDialog.Builder(this@MainActivity)
-                .setTitle(R.string.authentication_dialog_title).setMessage(title)
-                .setView(dialogLayout)
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    updateFeedWithAuthCheck(view=dialogLayout, feedId=feedId, link=link, title=title, username=dialogLayout.feed_username.text.toString(), password=dialogLayout.feed_password.text.toString())
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
+        if (!getPrefBoolean(PrefConstants.AUTH_DIALOG_DISPLAYED, defValue = false)) {
+            val dialogLayout = layoutInflater.inflate(R.layout.alert_dialog_username_password, null)
+            this.putPrefBoolean(PrefConstants.AUTH_DIALOG_DISPLAYED, true) //prevent multiple dialogs displayed at the same time
+            AlertDialog.Builder(this@MainActivity)
+                    .setTitle(R.string.authentication_dialog_title).setMessage(title)
+                    .setView(dialogLayout)
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        updateFeedWithAuthCheck(view = dialogLayout, feedId = feedId, link = link, title = title, username = dialogLayout.feed_username.text.toString(), password = dialogLayout.feed_password.text.toString())
+                    }
+                    .setNegativeButton(android.R.string.cancel) { _, _ ->
+                        this.putPrefBoolean(PrefConstants.AUTH_DIALOG_DISPLAYED, false)
+                    }
+                    .show()
+        }
     }
 
     private fun hasFetchingError(): Boolean {
