@@ -18,6 +18,7 @@
 package net.frju.flym.ui.entries
 
 import android.annotation.SuppressLint
+import android.graphics.Typeface
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -28,12 +29,18 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
 import com.bumptech.glide.request.transition.DrawableCrossFadeFactory
+import kotlinx.android.synthetic.main.dialog_edit_feed.view.*
 import kotlinx.android.synthetic.main.view_entry.view.*
+import kotlinx.android.synthetic.main.view_entry.view.feed_name_layout
 import net.fred.feedex.R
 import net.frju.flym.GlideApp
 import net.frju.flym.data.entities.EntryWithFeed
 import net.frju.flym.data.entities.Feed
+import net.frju.flym.data.utils.PrefConstants
 import net.frju.flym.service.FetcherService
+import net.frju.flym.ui.main.MainActivity
+import net.frju.flym.utils.getPrefString
+import net.frju.flym.utils.getSessionStartDate
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.sdk21.listeners.onClick
 import org.jetbrains.anko.sdk21.listeners.onLongClick
@@ -83,6 +90,15 @@ class EntryAdapter(var displayThumbnails: Boolean, private val globalClickListen
 
                     date.isEnabled = !entryWithFeed.entry.read
                     date.text = entryWithFeed.entry.getReadablePublicationDate(context)
+
+
+                    context.getPrefString(PrefConstants.SESSION_START_TIME, "")
+                    //if (entryWithFeed.entry.isnew && !entryWithFeed.entry.read) {
+                    if (entryWithFeed.entry.fetchDate.time > context.getSessionStartDate() && !entryWithFeed.entry.read) {
+                        feed_name_layout.typeface = Typeface.DEFAULT_BOLD
+                        date.typeface = Typeface.DEFAULT_BOLD
+                        title.typeface = Typeface.DEFAULT_BOLD
+                    }
 
                     favorite_icon.alpha = if (!entryWithFeed.entry.read) 1f else 0.5f
 

@@ -23,6 +23,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import androidx.appcompat.app.AppCompatActivity
@@ -30,6 +31,7 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.*
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.rometools.opml.feed.opml.Attribute
@@ -86,6 +88,8 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
         private const val INTENT_UNREADS = "net.frju.flym.intent.UNREADS"
         private const val INTENT_ALL = "net.frju.flym.intent.ALL"
         private const val INTENT_FAVORITES = "net.frju.flym.intent.FAVORITES"
+
+        private const val SESSION_DURATION = 15 //session duration in minutes
     }
 
     private val feedGroups = mutableListOf<FeedGroup>()
@@ -368,6 +372,26 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
         notificationManager.cancel(0)
 
         handleResumeOnlyIntents(intent)
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+
+        val lastActionDate: String? = getPrefString(PrefConstants.SESSION_LAST_ACTION_TIME, "")
+        val currentDateAction = dateFormat.format(Date())
+        val sessionTimeout = Date(System.currentTimeMillis() - SESSION_DURATION * 60 * 60 * 1000)
+
+        if (lastActionDate == "" || dateFormat.parse(lastActionDate).before(sessionTimeout)) {
+            putPrefString(PrefConstants.SESSION_START_TIME, currentDateAction)
+
+                val frg = supportFragmentManager.findFragmentById(R.id.frame_master) as EntriesFragment
+                supportFragmentManager.beginTransaction()
+                    .detach(frg)
+                    .attach(frg)
+                    .commit()
+                    //.commitAllowingStateLoss()
+        }
+        putPrefString(PrefConstants.SESSION_LAST_ACTION_TIME, currentDateAction)
     }
 
     override fun onPause() {
@@ -658,4 +682,5 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
         }
         return false
     }
+
 }

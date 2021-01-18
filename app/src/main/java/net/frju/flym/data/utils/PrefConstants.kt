@@ -53,4 +53,7 @@ object PrefConstants {
     const val SORT_ORDER = "sort_order"
 
     const val ENABLE_SWIPE_ENTRY = "enable_swipe_entry"
+
+    const val SESSION_START_TIME = "session_start_time"
+    const val SESSION_LAST_ACTION_TIME = "session_last_action_time"
 }

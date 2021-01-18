@@ -22,8 +22,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.provider.Settings
 import androidx.core.content.edit
+import net.frju.flym.data.utils.PrefConstants
+import net.frju.flym.ui.main.MainActivity
 import org.jetbrains.anko.connectivityManager
 import org.jetbrains.anko.defaultSharedPreferences
+import java.text.SimpleDateFormat
+import java.util.*
 
 fun Context.isOnline() = connectivityManager.activeNetworkInfo?.isConnected == true
 
@@ -90,4 +94,12 @@ fun Context.showAlertDialog(
 
 fun Context.isGestureNavigationEnabled(): Boolean {
     return Settings.Secure.getInt(this.contentResolver, "navigation_mode", 0) == 2
+}
+
+val Context.dateFormat: SimpleDateFormat
+    get() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+
+fun Context.getSessionStartDate(): Long {
+    var sessionDate: String? = getPrefString(PrefConstants.SESSION_START_TIME, "")
+    return if (sessionDate != "") dateFormat.parse(sessionDate).time else Date(System.currentTimeMillis()).time
 }
