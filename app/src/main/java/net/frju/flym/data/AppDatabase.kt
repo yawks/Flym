@@ -74,8 +74,10 @@ abstract class AppDatabase : RoomDatabase() {
         private val MIGRATION_3_4: Migration = object : Migration(3, 4) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.run {
-                    execSQL("ALTER TABLE feeds ADD COLUMN username TEXT, COLUMN password TEXT;")
-                    execSQL("ALTER TABLE tasks ADD COLUMN username TEXT, COLUMN password TEXT;")
+                    execSQL("ALTER TABLE feeds ADD COLUMN username TEXT")
+                    execSQL("ALTER TABLE feeds ADD COLUMN password TEXT")
+                    execSQL("ALTER TABLE tasks ADD COLUMN username TEXT")
+                    execSQL("ALTER TABLE tasks ADD COLUMN password TEXT")
                 }
             }
         }
