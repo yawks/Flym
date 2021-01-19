@@ -89,7 +89,7 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
         private const val INTENT_ALL = "net.frju.flym.intent.ALL"
         private const val INTENT_FAVORITES = "net.frju.flym.intent.FAVORITES"
 
-        private const val SESSION_DURATION = 15 //session duration in minutes
+        private const val SESSION_DURATION = 10 //session duration in minutes
     }
 
     private val feedGroups = mutableListOf<FeedGroup>()
@@ -379,17 +379,17 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
 
         val lastActionDate: String? = getPrefString(PrefConstants.SESSION_LAST_ACTION_TIME, "")
         val currentDateAction = dateFormat.format(Date())
-        val sessionTimeout = Date(System.currentTimeMillis() - SESSION_DURATION * 60 * 60 * 1000)
+        val sessionTimeout = Date(System.currentTimeMillis() - SESSION_DURATION * 60 * 1000)
 
         if (lastActionDate == "" || dateFormat.parse(lastActionDate).before(sessionTimeout)) {
-            putPrefString(PrefConstants.SESSION_START_TIME, currentDateAction)
+            // put a new session start time (30 seconds ago to be sure recent fetched articles are considered as new)
+            putPrefString(PrefConstants.SESSION_START_TIME, dateFormat.format(System.currentTimeMillis() - 30 * 1000))
 
-                val frg = supportFragmentManager.findFragmentById(R.id.frame_master) as EntriesFragment
-                supportFragmentManager.beginTransaction()
-                    .detach(frg)
-                    .attach(frg)
-                    .commit()
-                    //.commitAllowingStateLoss()
+            val frg = supportFragmentManager.findFragmentById(R.id.frame_master) as EntriesFragment
+            supportFragmentManager.beginTransaction()
+                .detach(frg)
+                .attach(frg)
+                .commit()
         }
         putPrefString(PrefConstants.SESSION_LAST_ACTION_TIME, currentDateAction)
     }
