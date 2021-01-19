@@ -91,14 +91,17 @@ class EntryAdapter(var displayThumbnails: Boolean, private val globalClickListen
                     date.isEnabled = !entryWithFeed.entry.read
                     date.text = entryWithFeed.entry.getReadablePublicationDate(context)
 
-                    if (entryWithFeed.entry.fetchDate.time > context.getSessionStartDate() && !entryWithFeed.entry.read) {
-                        feed_name_layout.typeface = Typeface.DEFAULT_BOLD
-                        date.typeface = Typeface.DEFAULT_BOLD
-                        title.typeface = Typeface.DEFAULT_BOLD
-                    } else {
-                        feed_name_layout.typeface = Typeface.DEFAULT
-                        date.typeface = Typeface.DEFAULT
-                        title.typeface = Typeface.DEFAULT
+                    val sessionDurationSetting = context.getPrefString(PrefConstants.SESSION_DURATION, "")
+                    if (sessionDurationSetting != "" && sessionDurationSetting != "NO_SESSION") {
+                        if (entryWithFeed.entry.fetchDate.time > context.getSessionStartDate() && !entryWithFeed.entry.read) {
+                            feed_name_layout.typeface = Typeface.DEFAULT_BOLD
+                            date.typeface = Typeface.DEFAULT_BOLD
+                            title.typeface = Typeface.DEFAULT_BOLD
+                        } else {
+                            feed_name_layout.typeface = Typeface.DEFAULT
+                            date.typeface = Typeface.DEFAULT
+                            title.typeface = Typeface.DEFAULT
+                        }
                     }
 
                     favorite_icon.alpha = if (!entryWithFeed.entry.read) 1f else 0.5f

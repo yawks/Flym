@@ -56,4 +56,5 @@ object PrefConstants {
 
     const val SESSION_START_TIME = "session_start_time"
     const val SESSION_LAST_ACTION_TIME = "session_last_action_time"
+    const val SESSION_DURATION = "session_duration"
 }

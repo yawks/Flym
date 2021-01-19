@@ -137,6 +137,7 @@
     <string name="settings_category_article_list">Article list</string>
     <string name="settings_category_article_appearance">Article appearance</string>
     <string name="settings_enable_entry_swipe_description">If enabled, allows swiping between entries while viewing an entry</string>
+    <string name="settings_session_durations">Duration keeping articles as new after fetching them</string>
 
     <string-array name="settings_intervals">
         <item>5 minutes</item>
@@ -176,5 +177,16 @@
         <item>Light</item>
         <item>Dark</item>
         <item>Black</item>
+    </string-array>
+    <string-array name="settings_session_durations">
+        <item>Never marked as new</item>
+        <item>1 minute</item>
+        <item>2 minutes</item>
+        <item>3 minutes</item>
+        <item>4 minutes</item>
+        <item>5 minutes</item>
+        <item>10 minutes</item>
+        <item>15 minutes</item>
+        <item>30 minutes</item>
     </string-array>
 </resources>

@@ -145,6 +145,16 @@
             android:title="@string/filter_title"
             android:dialogMessage="@string/filter_dialog_message"/>
 
+        <net.frju.flym.ui.views.AutoSummaryListPreference
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:defaultValue="NO_SESSION"
+            android:entries="@array/settings_session_durations"
+            android:entryValues="@array/settings_session_durations_values"
+            android:inputType="number"
+            android:key="session_duration"
+            android:title="@string/settings_session_durations" />
+
 
     </PreferenceCategory>
 
