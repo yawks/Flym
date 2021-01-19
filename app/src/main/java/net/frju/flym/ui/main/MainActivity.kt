@@ -381,7 +381,7 @@ class MainActivity : AppCompatActivity(), MainNavigator, AnkoLogger {
         val sessionDurationSetting = getPrefString(PrefConstants.SESSION_DURATION, "")
 
         if (sessionDurationSetting != "" && sessionDurationSetting != "NO_SESSION") {
-            val sessionDuration = sessionDurationSetting!!.toLong() * 86400000L
+            val sessionDuration = sessionDurationSetting!!.toLong()
             val sessionTimeout = Date(System.currentTimeMillis() - sessionDuration * 60 * 1000)
 
             if (lastActionDate == "" || dateFormat.parse(lastActionDate).before(sessionTimeout)) {
